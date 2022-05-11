@@ -1,0 +1,124 @@
+import SwiftUI
+import PlaygroundSupport
+import Darwin
+
+struct box : Identifiable {
+    let id = UUID().uuidString
+    let height : CGFloat
+    let width : CGFloat
+    let color : Color
+}
+
+struct TagCloudView: View {
+    var boxes: [box]
+
+    @State private var totalHeight
+          = CGFloat.zero       // << variant for ScrollView/List
+    //    = CGFloat.infinity   // << variant for VStack
+
+    var body: some View {
+        VStack {
+            GeometryReader { geometry in
+                self.generateContent(in: geometry)
+            }
+        }
+        .frame(height: totalHeight)// << variant for ScrollView/List
+        //.frame(maxHeight: totalHeight) // << variant for VStack
+    }
+
+    private func generateContent(in g: GeometryProxy) -> some View {
+        var width = CGFloat.zero
+        var height = CGFloat.zero
+
+        return ZStack(alignment: .topLeading) {
+            ForEach(self.boxes) { box in
+                self.item(for: box)
+                    .padding([.horizontal, .vertical], 4)
+                    .alignmentGuide(.leading, computeValue: { d in
+                        if (abs(width - d.width) > g.size.width)
+                        {
+                            width = 0
+                            height -= d.height
+                        }
+                        let result = width
+                        if box.id == self.boxes.last!.id {
+                            width = 0 //last item
+                        } else {
+                            width -= d.width
+                        }
+                        return result
+                    })
+                    .alignmentGuide(.top, computeValue: {d in
+                        let result = height
+                        if box.id == self.boxes.last!.id {
+                            height = 0 // last item
+                        }
+                        return result
+                    })
+            }
+        }.background(viewHeightReader($totalHeight))
+    }
+
+    private func item(for box: box) -> some View {
+//        ZStack {
+//            Color.pink
+            Rectangle()
+            .foregroundColor(box.color)
+            .frame(width: box.width, height: box.height)
+//        Text(text)
+//            .padding(.all, 5)
+//            .font(.body)
+//            .background(Color.blue)
+//            .foregroundColor(Color.white)
+//            .cornerRadius(5)
+//        }
+    }
+
+    private func viewHeightReader(_ binding: Binding<CGFloat>) -> some View {
+        return GeometryReader { geometry -> Color in
+            let rect = geometry.frame(in: .local)
+            DispatchQueue.main.async {
+                binding.wrappedValue = rect.size.height
+            }
+            return .clear
+        }
+    }
+}
+
+struct ContentView : View {
+    
+    let boxes = [box(height: 100, width: 50, color: .blue),
+                 box(height: 10, width: 90, color: .yellow),
+                 box(height: 100, width: 20, color: .orange),
+                 box(height: 50, width: 50, color: .pink),
+                 box(height: 70, width: 40, color: .purple),
+                 box(height: 40, width: 70, color: .white),
+                 box(height: 10, width: 50, color: .blue),
+                 box(height: 50, width: 100, color: .brown),
+                 box(height: 100, width: 50, color: .gray),
+                 box(height: 100, width: 20, color: .orange),
+                 box(height: 50, width: 50, color: .pink),
+                 box(height: 70, width: 40, color: .purple),
+                 box(height: 40, width: 70, color: .white),
+                 box(height: 10, width: 50, color: .blue),
+                 box(height: 70, width: 40, color: .purple),
+                 box(height: 40, width: 70, color: .white),
+                 box(height: 10, width: 50, color: .blue),
+                 box(height: 50, width: 100, color: .brown),
+                 box(height: 100, width: 50, color: .gray),
+                 box(height: 100, width: 50, color: .gray),
+                 box(height: 100, width: 20, color: .orange),
+                 box(height: 50, width: 50, color: .pink),
+                 box(height: 70, width: 40, color: .purple),
+                 box(height: 40, width: 70, color: .white),
+                 box(height: 10, width: 50, color: .blue),
+    ]
+    
+    var body: some View {
+        VStack {
+            Text("Masonry").font(.largeTitle)
+            TagCloudView(boxes: boxes)
+        }.frame(width: 500, height: 500)
+            .background(Color.black)
+    }
+}
